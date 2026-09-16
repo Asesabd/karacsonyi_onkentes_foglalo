@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: xmas-booking
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    # Applies pending migrations, then (idempotently) upserts the 150 seats
+    # and the admin user from ADMIN_EMAIL/ADMIN_PASSWORD before starting -
+    # safe to run on every deploy/restart.
+    startCommand: npm run prisma:deploy && npm run seed && npm run start
+    healthCheckPath: /api/seats
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: xmas-booking-db
+          property: connectionString
+      - key: ADMIN_SESSION_SECRET
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      # Fill these in manually in the Render dashboard after the first
+      # deploy (Environment tab) - never commit real values to the repo.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+
+databases:
+  - name: xmas-booking-db
+    plan: free
+    databaseName: xmas_booking
+    user: xmas

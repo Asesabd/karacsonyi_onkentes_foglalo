@@ -77,6 +77,22 @@ Saját, egyszerű megoldás: `AdminUser` tábla bcrypt jelszó-hash-sel, bejelen
 
 Lásd `.env.example` a szükséges környezeti változók listájáért.
 
+### Deploy Render-re (`render.yaml`)
+
+A repóban lévő `render.yaml` egy **Render Blueprint**: egy webszolgáltatást (Node) és a hozzá tartozó Postgres adatbázist írja le, a `DATABASE_URL`-t automatikusan összekötve.
+
+1. Render dashboard → **New** → **Blueprint** → válaszd ki ezt a repót. A Render felismeri a `render.yaml`-t, és felkínálja a `xmas-booking` web service + `xmas-booking-db` Postgres létrehozását.
+2. `ADMIN_SESSION_SECRET` és `CRON_SECRET` automatikusan generálódik (`generateValue: true`). A `DATABASE_URL` automatikusan kitöltődik a Render Postgresből.
+3. Az **Environment** fülön töltsd ki kézzel (ezek sosincsenek a repóban, `sync: false`):
+   - `ADMIN_EMAIL`, `ADMIN_PASSWORD` - az admin belépési adatok.
+   - `RESEND_API_KEY`, `EMAIL_FROM` - a Resend-nél hitelesített domainnel (`onkentes@example.com` NEM fog működni, cseréld a saját hitelesített domainedre).
+   - `NEXT_PUBLIC_APP_URL` - a Render által adott URL (pl. `https://xmas-booking.onrender.com`), miután az első deploy megtörtént és ismert a cím.
+4. Deploy után hozz létre **két Cron Job**-ot a Render dashboardon (**New** → **Cron Job**, ugyanabban a Render projektben, hogy elérje a belső hálózatot is, de elég a publikus URL-t hívni):
+   - Ütemezés: `*/5 * * * *`, parancs: `curl -fsS -X POST "https://<a-te-render-url-od>/api/cron/retry-emails?secret=$CRON_SECRET"`
+   - Ütemezés: `*/5 * * * *`, parancs: `curl -fsS -X POST "https://<a-te-render-url-od>/api/cron/expire-locks?secret=$CRON_SECRET"`
+   - A `CRON_SECRET`-et a web service Environment fülén generált értékről másold át (vagy add hozzá Environment Variable-ként a cron jobhoz is).
+5. A `free` Postgres plan Render-en 90 nap után lejár és törlődik - éles használat előtt válts `starter` (fizetős) plan-re az adatbázisnál, hogy ne veszítsd el az adatokat.
+
 ## 9. Biztonsági megoldások
 
 - **Input validáció**: minden bemenet `zod` séma ellen validálva, kliens- és szerveroldalon is.
