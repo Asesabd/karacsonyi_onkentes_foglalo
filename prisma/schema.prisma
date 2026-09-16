@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventDay {
+  DEC_24
+  DEC_25
+  DEC_26
+}
+
+enum SeatStatus {
+  FREE
+  LOCKED
+  BOOKED
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+/// One row per bookable seat, pre-seeded (3 days x 50 seats = 150 rows).
+/// The row itself + the unique (day, seatNumber) constraint is the ultimate
+/// guarantee against double-booking: two seats for the same day/number can
+/// never both exist, and every state transition is a single atomic UPDATE
+/// guarded by the seat's *current* status, so only one concurrent request
+/// can ever win the transition into BOOKED.
+model Seat {
+  id           String     @id @default(cuid())
+  day          EventDay
+  seatNumber   Int
+  status       SeatStatus @default(FREE)
+  lockedUntil  DateTime?
+  lockToken    String?
+  bookingId    String?
+  booking      Booking?   @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([day, seatNumber])
+  @@index([lockToken])
+  @@index([bookingId])
+  @@index([day, status])
+}
+
+model Booking {
+  id              String      @id @default(cuid())
+  /// Non-guessable public identifier shown to the user, e.g. XMAS-8K4M2P
+  publicId        String      @unique
+  /// Equal to the lock token that produced this booking; a unique constraint
+  /// here makes the finalize endpoint idempotent (a retried/duplicated
+  /// request with the same lock can never create a second booking row).
+  idempotencyKey  String      @unique
+  name            String
+  email           String
+  phone           String
+  emailStatus     EmailStatus @default(PENDING)
+  emailAttempts   Int         @default(0)
+  emailLastError  String?
+  createdAt       DateTime    @default(now())
+  seats           Seat[]
+
+  @@index([email])
+  @@index([createdAt])
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+/// Simple fixed-window counter used for IP-based rate limiting of
+/// public write endpoints, avoiding an extra Redis dependency.
+model RateLimit {
+  key         String   @id
+  windowStart DateTime
+  count       Int      @default(0)
+}

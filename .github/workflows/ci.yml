@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: xmas
+          POSTGRES_PASSWORD: xmas
+          POSTGRES_DB: xmas_booking
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U xmas"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://xmas:xmas@localhost:5432/xmas_booking?schema=public
+      ADMIN_SESSION_SECRET: ci-test-secret-not-for-production-000000000000000000
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: CiTestPassw0rd!
+      RESEND_API_KEY: ""
+      EMAIL_FROM: "Test <test@example.com>"
+      CRON_SECRET: ci-cron-secret
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx prisma migrate deploy
+
+      - run: npm run typecheck
+
+      - run: npm run test
+
+      - run: npm run test:integration
+
+      - run: npm run build

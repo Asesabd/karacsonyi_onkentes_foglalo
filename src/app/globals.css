@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background: linear-gradient(180deg, #fdf6ec 0%, #f6ede0 100%);
+  color: #1a1a1a;
+}
+
+/* Keep focus rings visible for keyboard users everywhere. */
+:focus-visible {
+  outline: 3px solid #1c5e3f;
+  outline-offset: 2px;
+}
