@@ -93,6 +93,8 @@ A repóban lévő `render.yaml` egy **Render Blueprint**: egy webszolgáltatást
    - A `CRON_SECRET`-et a web service Environment fülén generált értékről másold át (vagy add hozzá Environment Variable-ként a cron jobhoz is).
 5. A `free` Postgres plan Render-en 90 nap után lejár és törlődik - éles használat előtt válts `starter` (fizetős) plan-re az adatbázisnál, hogy ne veszítsd el az adatokat.
 
+**Fizetés / bankkártya:** a `render.yaml`-ban a webszolgáltatás `plan: free`, az adatbázis is `plan: free` - ezekhez elvileg nem kell fizetős csomag. Ha a Render Blueprint létrehozásakor mégis bankkártyát kér, az a Render saját fiók-szintű szabálya (visszaélés-megelőzés miatt sok szolgáltató kártyaellenőrzést kér az ingyenes csomagokhoz is, akkor is, ha nem terhelik meg) - ez nem a projekt konfigurációjából jön, hanem Render-oldali fiók-ellenőrzés. Ha nem szeretnél kártyát megadni, alternatíva: [Fly.io](https://fly.io) (ingyenes indulócsomag kártya nélkül is elérhető lehet) vagy [Railway](https://railway.app) - mindkettőhöz a meglévő `Dockerfile` nélküli Node build ugyanúgy működik, csak a platform-specifikus lépések mások (lásd a "Deployment terv" 1-5. pontjait, azok platform-függetlenek).
+
 ## 9. Biztonsági megoldások
 
 - **Input validáció**: minden bemenet `zod` séma ellen validálva, kliens- és szerveroldalon is.

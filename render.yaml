@@ -2,7 +2,7 @@ services:
   - type: web
     name: xmas-booking
     runtime: node
-    plan: starter
+    plan: free
     buildCommand: npm ci && npm run build
     # Applies pending migrations, then (idempotently) upserts the 150 seats
     # and the admin user from ADMIN_EMAIL/ADMIN_PASSWORD before starting -
